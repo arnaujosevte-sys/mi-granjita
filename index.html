@@ -241,6 +241,9 @@ dd{margin:0;font-weight:700;line-height:1.5}
 <div class="modal" id="modal" hidden><div class="card" id="card"></div></div>
 
 <script>
+window.onerror=function(m,u,l){var d=document.createElement('div');d.style.cssText='position:fixed;left:10px;right:10px;top:40px;z-index:99;background:#fff;border:3px solid #3a2a1f;border-radius:14px;padding:12px;font:15px sans-serif;color:#3a2a1f';d.textContent='Error al cargar el juego: '+m+' (línea '+l+'). Actualiza iOS o abre el enlace en Safari.';document.body.appendChild(d)};
+</script>
+<script>
 /* ---------- datos ---------- */
 const FOODS=[
  {id:'hierba',name:'Hierba',e:'🌿',p:2,n:16,f:2},
@@ -695,7 +698,7 @@ function tickle(){
  if(v.asleep)return say('Zzz… zzz…');
  const now=Date.now();anim('jump');sfx[a.id]();
  if(now-tickleAt>1200){v.fun=clamp(v.fun+2);tickleAt=now}
- const i=factIdx[a.id]=((factIdx[a.id]??-1)+1)%a.facts.length;
+ const i=factIdx[a.id]=((a.id in factIdx?factIdx[a.id]:-1)+1)%a.facts.length;
  say(`<b>${a.sound}</b> ¿Sabías que…? ${a.facts[i]}`);renderStats();
 }
 function collect(){
@@ -867,9 +870,8 @@ function start(data){
   if($('#modal').hidden&&!v.asleep&&!v.sick&&$('#bubble').hidden&&Date.now()-complainAt>25000){const low=STATS.filter(s=>v[s.k]<30).sort((x,y)=>v[x.k]-v[y.k]);
    if(low.length){complainAt=Date.now();say(low[0].low.replace('sucio',g(a,'sucio','sucia')),true);sfx[a.id]()}}
  },1000);
- window.claude?.hot?.snapshot?.(()=>state);
 }
-window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
+start({});
 </script>
 
 </body>
