@@ -1,0 +1,876 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Mi Granjita</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mi Granjita">
+<meta name="theme-color" content="#b8432f">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<style>
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-size:14px;touch-action:manipulation;overscroll-behavior:none}
+#app{padding-top:max(10px,env(safe-area-inset-top,0px))!important;padding-bottom:max(10px,env(safe-area-inset-bottom,0px))!important}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@500;700;800&display=swap">
+<style>
+/* Layout: columna con forma de móvil — animales, aros de estado y nivel, escena de la habitación, bandeja de objetos, menú de habitaciones */
+:root{
+  --sky:#9ad7f2; --grass:#78c257; --barn:#b8432f; --wood:#a76a3c; --wood-d:#8c5530;
+  --hay:#f1cd5c; --paper:#fffaf0; --cream:#f5ead4; --ink:#3a2a1f; --ink-soft:#6d5a4b;
+  --soil:#7a4e2d; --good:#45a849; --warn:#f0a22e; --bad:#df4f3b; --coin:#f6c445;
+  --display:"Baloo 2","Trebuchet MS",system-ui,sans-serif;
+  --body:"Nunito","Segoe UI",system-ui,sans-serif;
+  --emoji:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif;
+  color-scheme: light;
+}
+html,body{height:100%}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+body{
+  background:var(--barn);
+  background-image:repeating-linear-gradient(90deg,rgba(0,0,0,.08) 0 2px,transparent 2px 44px);
+  font-family:var(--body); color:var(--ink); overflow:hidden;
+  -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent;
+}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid #1f6feb;outline-offset:2px}
+#app{
+  height:100%; max-width:480px; margin:0 auto; background:var(--paper);
+  display:grid; grid-template-rows:auto auto minmax(0,1fr) auto auto; grid-template-columns:minmax(0,1fr); gap:8px;
+  padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:10px; box-shadow:0 0 0 4px var(--ink);
+}
+/* cabecera */
+.top{display:flex;align-items:center;gap:8px;min-width:0}
+.tabs{display:flex;gap:6px;overflow-x:auto;flex:1;min-width:0;padding:4px 2px 6px;scrollbar-width:thin}
+.tab{position:relative;flex:0 0 auto;width:46px;height:46px;border-radius:50%;border:3px solid var(--ink);background:var(--cream);padding:2px;transition:transform .15s}
+.tab svg{width:100%;height:100%;display:block}
+.tab[aria-selected="true"]{background:var(--hay);transform:translateY(-2px);box-shadow:0 3px 0 var(--ink)}
+.tab.locked svg{filter:grayscale(1) brightness(.6);opacity:.5}
+.tab .lock{position:absolute;inset:0;display:grid;place-items:center;font:800 11px/1 var(--display);color:var(--paper);text-shadow:0 1px 2px #000}
+.tab .dot{position:absolute;top:-4px;right:-4px;width:16px;height:16px;border-radius:50%;background:var(--bad);border:2px solid var(--paper);color:#fff;font:800 11px/12px var(--body);text-align:center}
+.coins{display:flex;align-items:center;gap:6px;background:var(--ink);color:var(--paper);border-radius:99px;padding:5px 12px 5px 6px;font:800 16px var(--display);font-variant-numeric:tabular-nums}
+.coin{width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe58a,var(--coin) 55%,#c9931c);border:2px solid #8a5f10;display:inline-block;flex:0 0 auto}
+.iconbtn{width:38px;height:38px;border-radius:50%;border:3px solid var(--ink);background:var(--paper);font:18px var(--emoji);flex:0 0 auto}
+/* estado */
+.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.stat{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0}
+.ring{--v:50;--c:var(--good);width:48px;height:48px;border-radius:50%;display:grid;place-items:center;
+  background:conic-gradient(var(--c) calc(var(--v)*1%),#e6d8bf 0);border:3px solid var(--ink)}
+.ring span{width:32px;height:32px;border-radius:50%;background:var(--paper);display:grid;place-items:center;font:17px var(--emoji)}
+.ring span.lvn{font:800 18px var(--display)}
+.stat b{font:700 11px/1.2 var(--body);color:var(--ink-soft);font-variant-numeric:tabular-nums;text-align:center;max-width:100%;overflow-wrap:anywhere}
+.ring.low{animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.08)}}
+/* escena */
+.scene{position:relative;border:4px solid var(--ink);border-radius:24px;overflow:hidden;min-height:0;isolation:isolate}
+.room-comer{background:
+  repeating-linear-gradient(0deg,#e2bb4f 0 6px,var(--hay) 6px 14px) bottom/100% 24% no-repeat,
+  repeating-linear-gradient(90deg,var(--wood) 0 40px,var(--wood-d) 40px 43px)}
+.room-lavar{background:
+  linear-gradient(#5fb0dc,#3f93c4) bottom/100% 22% no-repeat,
+  repeating-linear-gradient(0deg,transparent 0 36px,rgba(255,255,255,.85) 36px 39px),
+  repeating-linear-gradient(90deg,transparent 0 36px,rgba(255,255,255,.85) 36px 39px),#bfe6f5}
+.room-dormir{background:
+  repeating-linear-gradient(0deg,#cfa43f 0 6px,#e0b74c 6px 14px) bottom/100% 24% no-repeat,
+  repeating-linear-gradient(90deg,#8a5a34 0 40px,#734727 40px 43px)}
+.room-jugar{background:
+  radial-gradient(120% 60% at 30% 100%,#69b548 60%,transparent 61%),
+  radial-gradient(110% 55% at 85% 100%,var(--grass) 60%,transparent 61%),
+  linear-gradient(#7cc8ee,#c9ecfb 70%)}
+.room-huerto{background:
+  repeating-linear-gradient(0deg,#6e4528 0 10px,var(--soil) 10px 20px) bottom/100% 72% no-repeat,
+  linear-gradient(#7cc8ee,#c9ecfb)}
+.room-tienda{background:
+  repeating-linear-gradient(90deg,#d8452f 0 30px,#fff6e8 30px 60px) top/100% 34px no-repeat,
+  linear-gradient(transparent 33%,#6b4426 33% 35%,transparent 35% 62%,#6b4426 62% 64%,transparent 64%),
+  repeating-linear-gradient(90deg,#e8d3ae 0 40px,#dcc39a 40px 43px)}
+.roomname{position:absolute;top:10px;left:12px;z-index:3;background:var(--paper);border:3px solid var(--ink);border-radius:12px;padding:0 10px;font:800 15px/26px var(--display)}
+.room-tienda .roomname{top:42px}
+.deco{position:absolute;inset:0;pointer-events:none;z-index:0}
+.win{position:absolute;top:14%;right:9%;width:72px;height:72px;border:5px solid #5b3a20;border-radius:6px;background:linear-gradient(var(--sky),#d6f1fc);overflow:hidden}
+.win::before,.win::after{content:"";position:absolute;background:#5b3a20}
+.win::before{left:50%;top:0;bottom:0;width:5px;margin-left:-2.5px}
+.win::after{top:50%;left:0;right:0;height:5px;margin-top:-2.5px}
+.night .win{background:linear-gradient(#1b2350,#2f3a78)}
+.moon{position:absolute;top:8px;left:10px;width:22px;height:22px;border-radius:50%;box-shadow:6px 4px 0 0 #fff4c2}
+.sun{position:absolute;top:8%;right:10%;width:58px;height:58px;border-radius:50%;background:#ffd84a;box-shadow:0 0 0 10px rgba(255,216,74,.35)}
+.room-huerto .sun{top:4%;width:40px;height:40px}
+.cloud{position:absolute;height:22px;border-radius:20px;background:#fff;animation:drift 40s linear infinite}
+.cloud::before{content:"";position:absolute;width:30px;height:30px;border-radius:50%;background:#fff;left:14px;top:-14px}
+.fence{position:absolute;left:0;right:0;bottom:22%;height:42px;
+  background:linear-gradient(transparent 10px,#fff 10px 17px,transparent 17px 27px,#fff 27px 34px,transparent 34px),
+  repeating-linear-gradient(90deg,transparent 0 30px,#fff 30px 40px);opacity:.9}
+.trough{position:absolute;left:50%;bottom:3%;width:62%;height:7%;transform:translateX(-50%);background:#6b4426;border:3px solid var(--ink);border-radius:4px 4px 18px 18px;z-index:0}
+.mirror{position:absolute;top:22%;right:7%;width:62px;height:88px;border-radius:40px 40px 8px 8px;border:5px solid #c9931c;background:linear-gradient(135deg,#e9f7ff 30%,#bfe3f5 60%,#e9f7ff 70%)}
+@keyframes drift{from{transform:translateX(-120px)}to{transform:translateX(520px)}}
+.pet{position:absolute;left:50%;bottom:9%;transform:translateX(-50%);height:min(70%,310px);aspect-ratio:1;max-width:86%;z-index:1;cursor:pointer;touch-action:none}
+.pet svg{width:100%;height:100%;display:block;overflow:visible;transform-origin:50% 95%;animation:breathe 3.2s ease-in-out infinite}
+.pet.jump svg{animation:hop .5s ease-out}
+.pet.shake svg{animation:nope .55s ease-in-out}
+.pet.sick svg{filter:saturate(.5) hue-rotate(40deg) brightness(.97)}
+@keyframes breathe{50%{transform:scale(1.02,.975)}}
+@keyframes hop{30%{transform:translateY(-14%) scale(.96,1.05)}60%{transform:translateY(0) scale(1.06,.93)}}
+@keyframes nope{20%{transform:rotate(-7deg)}45%{transform:rotate(7deg)}70%{transform:rotate(-4deg)}}
+.petname{position:absolute;left:50%;bottom:-2px;transform:translate(-50%,60%);white-space:nowrap;background:var(--ink);color:var(--paper);border-radius:99px;padding:0 12px;font:800 14px/24px var(--display)}
+.petname.sick{background:#4f7a2e}
+svg .eye{transform-box:fill-box;transform-origin:center;transition:transform .08s}
+svg.blink .eye{transform:scaleY(.1)}
+svg .shut,svg .brows{display:none}
+svg.sleep .eye,svg.sleep .glasses{display:none} svg.sleep .shut{display:inline}
+svg.sad .brows{display:inline}
+.dark{position:absolute;inset:0;background:rgba(10,14,46,.66);opacity:0;transition:opacity .6s;pointer-events:none;z-index:2}
+.night .dark{opacity:1}
+.fx{position:absolute;inset:0;pointer-events:none;z-index:4;overflow:hidden}
+.bub{position:absolute;border-radius:50%;background:radial-gradient(circle at 30% 30%,#fff,rgba(255,255,255,.35) 40%,rgba(160,215,255,.5));border:2px solid rgba(255,255,255,.9);animation:bub 1.6s ease-out forwards}
+@keyframes bub{to{transform:translateY(-40px) scale(1.2);opacity:0}}
+.drop{position:absolute;top:-20px;width:6px;height:16px;border-radius:6px;background:#4aa7e0;animation:fall .8s linear forwards}
+@keyframes fall{to{transform:translateY(520px)}}
+.heart{position:absolute;color:#e8435a;font:800 28px var(--display);animation:rise 1.4s ease-out forwards}
+.heart.e{font-family:var(--emoji)}
+@keyframes rise{to{transform:translateY(-90px) scale(1.4);opacity:0}}
+.zzz{position:absolute;font:800 26px var(--display);color:#fff;animation:zz 2.4s ease-in-out infinite;opacity:0}
+@keyframes zz{0%{transform:translate(0,0) scale(.6);opacity:0}30%{opacity:1}100%{transform:translate(30px,-70px) scale(1.2);opacity:0}}
+.bubble{position:absolute;top:44px;left:50%;transform:translateX(-50%);width:min(88%,360px);z-index:5;background:#fff;border:3px solid var(--ink);border-radius:18px;padding:8px 12px;font:700 15px/1.35 var(--body);text-align:center;box-shadow:0 4px 0 var(--ink);animation:pop .25s ease-out}
+.room-tienda .bubble{top:76px}
+.bubble b{font-family:var(--display);font-weight:800}
+.bubble.bad{background:#ffe9e4}
+@keyframes pop{from{transform:translateX(-50%) scale(.8);opacity:0}}
+.prod{position:absolute;right:8%;top:38%;z-index:3;width:62px;height:62px;border-radius:50%;border:3px solid var(--ink);background:#fff;font:32px/1 var(--emoji);box-shadow:0 4px 0 var(--ink);animation:bob 1.2s ease-in-out infinite}
+.prod::after{content:"¡Recoger!";position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:6px;white-space:nowrap;background:var(--hay);border:2px solid var(--ink);border-radius:8px;padding:0 6px;font:800 11px/18px var(--display)}
+@keyframes bob{50%{transform:translateY(-8px)}}
+/* huerto */
+.garden{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);width:92%;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;z-index:1}
+.plot{position:relative;aspect-ratio:1/1;max-height:22vh;border:3px solid var(--ink);border-radius:16px;background:repeating-linear-gradient(0deg,#5c3a20 0 8px,#6e4528 8px 16px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#fff;padding:4px}
+.plot .e{font:34px/1 var(--emoji)}
+.plot.ripe .e{animation:bob 1s ease-in-out infinite}
+.plot.ripe{box-shadow:0 0 0 3px var(--hay)}
+.plot small{font:800 11px var(--display);text-shadow:0 1px 2px #000;white-space:nowrap}
+.plot .bar{width:80%;height:6px;border-radius:4px;background:rgba(255,255,255,.3);overflow:hidden}
+.plot .bar i{display:block;height:100%;background:var(--grass)}
+.plot .w{position:absolute;top:2px;right:4px;font:14px var(--emoji)}
+/* bandeja */
+.tray{min-height:100px;display:flex;flex-direction:column;gap:6px;justify-content:center}
+.hint{font:700 13px var(--body);color:var(--ink-soft);text-align:center;text-wrap:balance}
+.foods{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.item{position:relative;border:3px solid var(--ink);background:#fff;border-radius:14px;padding:4px 0 2px;display:flex;flex-direction:column;align-items:center;touch-action:none;transition:transform .1s;min-width:0}
+.item:active{transform:scale(.94)}
+.item .e{font:24px/1.15 var(--emoji)}
+.item .p{display:flex;align-items:center;gap:3px;font:800 12px var(--display);font-variant-numeric:tabular-nums;white-space:nowrap}
+.item .p .coin{width:11px;height:11px;border-width:1px}
+.item .p.have{color:var(--good)}
+.item.sel{background:var(--hay);box-shadow:0 3px 0 var(--ink)}
+.item.on{background:#d9f3d5}
+.item .tag{font:800 10px var(--display);color:var(--ink-soft)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.big{display:flex;align-items:center;gap:6px;border:3px solid var(--ink);border-radius:16px;background:#fff;padding:7px 12px;font:800 15px var(--display);box-shadow:0 3px 0 var(--ink);touch-action:none}
+.big:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.big .e{font:22px var(--emoji)}
+.big.hot{background:var(--hay)}
+/* habitaciones */
+.rooms{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
+.room{border:3px solid var(--ink);border-radius:14px;background:var(--cream);padding:3px 0;display:flex;flex-direction:column;align-items:center;font:800 11px var(--display);min-width:0}
+.room .e{font:20px/1.2 var(--emoji)}
+.room[aria-current="true"]{background:var(--barn);color:#fff}
+.ghost{position:fixed;left:0;top:0;margin:-28px 0 0 -28px;font:48px/56px var(--emoji);pointer-events:none;z-index:50;filter:drop-shadow(0 4px 2px rgba(0,0,0,.3))}
+/* modal */
+.modal{position:fixed;inset:0;z-index:40;background:rgba(40,25,15,.55);display:grid;place-items:center;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px}
+.card{position:relative;width:min(100%,420px);max-height:100%;overflow:auto;background:var(--paper);border:4px solid var(--ink);border-radius:24px;padding:18px;box-shadow:0 6px 0 var(--ink)}
+.card h2{margin:0 36px 4px 0;font:800 26px/1.1 var(--display);text-wrap:balance}
+.card .sub{margin:0 0 12px;color:var(--ink-soft);font-weight:700;line-height:1.4}
+.close{position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:50%;border:3px solid var(--ink);background:#fff;font:800 18px var(--display)}
+.qtext{font:800 19px/1.3 var(--display);margin:6px 0 12px;text-wrap:balance}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{text-align:left;border:3px solid var(--ink);border-radius:14px;background:#fff;padding:10px 12px;font:700 15px var(--body)}
+.opt .e{font:22px var(--emoji);margin-right:8px;vertical-align:middle}
+.opt.ok{background:#d9f3d5;border-color:var(--good)}
+.opt.no{background:#ffe0da;border-color:var(--bad)}
+.explain{margin-top:12px;padding:10px 12px;border-radius:14px;background:var(--cream);font-weight:700;line-height:1.45}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px}
+.progress{font:800 14px var(--display);color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.gamebar{display:flex;justify-content:space-between;font:800 16px var(--display);margin-bottom:6px;font-variant-numeric:tabular-nums}
+#gc{width:100%;height:auto;display:block;border:3px solid var(--ink);border-radius:16px;background:linear-gradient(#bfe8fb,#e9f8ff 75%,#8fd06b 75%);touch-action:none}
+.mem{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.mc{aspect-ratio:3/4;border:3px solid var(--ink);border-radius:14px;background:var(--barn);background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.15) 0 6px,transparent 6px 12px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:2px}
+.mc.up{background:#fff}
+.mc.done{background:#d9f3d5;border-color:var(--good)}
+.mc .e{font:30px/1 var(--emoji)}
+.mc small{font:800 11px/1.1 var(--display);text-align:center}
+.ficha-head{display:flex;gap:12px;align-items:center}
+.ficha-head svg{width:96px;height:96px;flex:0 0 auto}
+.facts{margin:10px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.facts li{background:#fff;border:2px solid var(--ink);border-radius:12px;padding:8px 10px;line-height:1.4;font-weight:700}
+dl{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;margin:12px 0 0}
+dt{font:800 12px/1.6 var(--body);text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft)}
+dd{margin:0;font-weight:700;line-height:1.5}
+.emo{font-family:var(--emoji);letter-spacing:2px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}}
+@media (max-width:400px){.foods{grid-template-columns:repeat(5,minmax(0,1fr))}.ring{width:42px;height:42px}.ring span{width:28px;height:28px;font-size:15px}.room{font-size:10px}.big{padding:6px 9px;font-size:14px}}
+</style>
+
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <div class="tabs" id="tabs" role="tablist" aria-label="Animales"></div>
+    <div class="coins" title="Monedas"><i class="coin"></i><span id="coins">0</span></div>
+    <button class="iconbtn" id="mute" aria-label="Sonido">🔊</button>
+  </header>
+  <div class="stats" id="stats"></div>
+  <main class="scene" id="scene">
+    <div class="deco" id="deco"></div>
+    <div class="roomname" id="roomname"></div>
+    <div class="pet" id="pet" role="button" aria-label="Acariciar"></div>
+    <div class="garden" id="garden" hidden></div>
+    <button class="prod" id="prod" hidden aria-label="Recoger producto"></button>
+    <div class="dark"></div>
+    <div class="fx" id="fx"></div>
+    <div class="bubble" id="bubble" hidden></div>
+  </main>
+  <section class="tray" id="tray"></section>
+  <nav class="rooms" id="rooms"></nav>
+</div>
+<div class="modal" id="modal" hidden><div class="card" id="card"></div></div>
+
+<script>
+/* ---------- datos ---------- */
+const FOODS=[
+ {id:'hierba',name:'Hierba',e:'🌿',p:2,n:16,f:2},
+ {id:'trebol',name:'Trébol',e:'☘️',p:2,n:16,f:4},
+ {id:'heno',name:'Heno',e:'🌾',p:3,n:22,f:2},
+ {id:'maiz',name:'Maíz',e:'🌽',p:3,n:22,f:4},
+ {id:'semillas',name:'Pipas de girasol',e:'🌻',p:2,n:14,f:3},
+ {id:'zanahoria',name:'Zanahoria',e:'🥕',p:4,n:18,f:6},
+ {id:'manzana',name:'Manzana',e:'🍎',p:5,n:16,f:8},
+ {id:'lechuga',name:'Lechuga',e:'🥬',p:3,n:12,f:3},
+ {id:'calabaza',name:'Calabaza',e:'🎃',p:5,n:26,f:6},
+ {id:'gusano',name:'Gusano',e:'🐛',p:3,n:18,f:5,meat:true},
+ {id:'pescado',name:'Pescado',e:'🐟',p:6,n:24,f:4,meat:true},
+ {id:'pan',name:'Pan',e:'🍞',p:2,bad:'El pan casi no alimenta y les hincha la tripa. No es buena comida para patos ni para animales de granja.'},
+ {id:'chocolate',name:'Chocolate',e:'🍫',p:4,bad:'El chocolate lleva teobromina, una sustancia tóxica para caballos, perros y muchos otros animales.'},
+ {id:'aguacate',name:'Aguacate',e:'🥑',p:5,bad:'El aguacate contiene persina, que es tóxica para las aves y para animales de granja como vacas, ovejas y caballos.'},
+];
+const F=Object.fromEntries(FOODS.map(f=>[f.id,f]));
+const ANIMALS=[
+ {id:'vaca',name:'Lola',g:'a',species:'vaca',lvl:1,diet:'Herbívora y rumiante',herb:true,eats:['hierba','trebol','heno','maiz','zanahoria','manzana','calabaza'],fav:'hierba',sound:'¡Muuu!',
+  cria:'ternero',macho:'toro',da:'Leche, y con ella queso, yogur y mantequilla',
+  prod:{e:'🥛',name:'Leche',every:90,coins:8,info:'Con la leche se hace queso, yogur y mantequilla.'},
+  facts:['Su estómago tiene cuatro partes: rumen, retículo, omaso y abomaso.','Es rumiante: devuelve la comida a la boca para masticarla otra vez, hasta unas 8 horas al día.','Una vaca lechera puede beber unos 100 litros de agua al día.','Arriba no tiene dientes delanteros: tiene una almohadilla dura para arrancar la hierba.']},
+ {id:'cerdo',name:'Rufo',g:'o',species:'cerdo',lvl:1,diet:'Omnívoro',eats:['maiz','manzana','zanahoria','calabaza','lechuga','hierba','trebol','gusano','semillas','pescado'],fav:'calabaza',sound:'¡Oinc, oinc!',
+  cria:'lechón',macho:'verraco (la hembra es la cerda)',da:'Carne y embutidos',
+  prod:{e:'🍄',name:'Trufa',every:180,coins:15,info:'Gracias a su olfato, el cerdo encuentra trufas escondidas bajo tierra.'},
+  facts:['Casi no suda: se revuelca en el barro para refrescarse y protegerse del sol.','Tiene un olfato buenísimo; se usa para encontrar trufas bajo tierra.','Es uno de los animales más listos de la granja y puede aprender su nombre.','Es omnívoro: come plantas, frutas y también bichitos como gusanos.']},
+ {id:'gallina',name:'Clara',g:'a',species:'gallina',lvl:1,diet:'Omnívora',eats:['semillas','maiz','gusano','lechuga','calabaza','manzana','pescado'],fav:'gusano',sound:'¡Cocorocó, coc coc!',
+  cria:'pollito',macho:'gallo',da:'Huevos',
+  prod:{e:'🥚',name:'Huevo',every:60,coins:5,info:'Formar un huevo le lleva unas 25 horas: pone como mucho uno al día.'},
+  refuse:{heno:'El heno seco es demasiado fibroso: se le puede atascar en el buche.'},
+  facts:['No tiene dientes: traga piedrecitas que trituran la comida en la molleja.','Una gallina sana pone como mucho un huevo al día.','Ve más colores que las personas, incluida la luz ultravioleta.','Desciende de un ave salvaje de Asia: el gallo bankiva.']},
+ {id:'oveja',name:'Nube',g:'a',species:'oveja',lvl:1,diet:'Herbívora y rumiante',herb:true,eats:['hierba','trebol','heno','zanahoria','manzana','lechuga','maiz','semillas'],fav:'heno',sound:'¡Beeee!',
+  cria:'cordero',macho:'carnero',da:'Lana y leche, con la que se hacen quesos como el manchego',
+  prod:{e:'🧶',name:'Lana',every:150,coins:12,info:'Con la lana se tejen jerséis, bufandas y mantas.'},
+  facts:['Puede reconocer y recordar las caras de unas 50 ovejas durante años.','Sus pupilas son rectangulares: así ve casi todo a su alrededor sin girar la cabeza.','Su lana crece sin parar; normalmente se esquila una vez al año.','Es rumiante, como la vaca: su estómago tiene cuatro partes.']},
+ {id:'caballo',name:'Trueno',g:'o',species:'caballo',lvl:1,diet:'Herbívoro',herb:true,eats:['hierba','trebol','heno','zanahoria','manzana','maiz'],fav:'zanahoria',sound:'¡Hiiiii!',
+  cria:'potro',macho:'caballo (la hembra es la yegua)',da:'Ayuda en el campo, tira de carros y se puede montar',
+  prod:{e:'💩',name:'Abono',every:100,abono:1,info:'El estiércol del caballo es un abono estupendo: úsalo en el Huerto para que las plantas crezcan de golpe.'},
+  facts:['Puede dormitar de pie porque bloquea las articulaciones de sus patas; para dormir profundo se tumba.','No puede vomitar, por eso hay que cuidar mucho lo que come.','Sus dientes crecen durante casi toda su vida y se desgastan al masticar.','Tiene los ojos a los lados de la cabeza: ve casi todo lo que le rodea.']},
+ {id:'pato',name:'Paco',g:'o',species:'pato',lvl:2,diet:'Omnívoro',eats:['semillas','maiz','lechuga','gusano','pescado','calabaza','hierba','trebol'],fav:'pescado',sound:'¡Cuac, cuac!',
+  cria:'patito',macho:'pato (la hembra es la pata)',da:'Huevos y plumas',
+  prod:{e:'🥚',name:'Huevo de pato',every:80,coins:6,info:'El huevo de pato es más grande que el de gallina.'},
+  refuse:{heno:'El heno seco es demasiado fibroso para un pato.'},
+  facts:['Sus plumas no se mojan: las cubre con una grasa que fabrica junto a la cola.','Tiene membranas entre los dedos: son como aletas para nadar.','Los patitos siguen al primer ser que ven moverse al nacer, normalmente a su madre.','Filtra el agua con el pico para atrapar semillas y bichitos.']},
+ {id:'conejo',name:'Copo',g:'o',species:'conejo',lvl:3,diet:'Herbívoro',herb:true,eats:['heno','hierba','trebol','zanahoria','manzana','lechuga'],fav:'heno',sound:'¡Snif, snif!',
+  cria:'gazapo',macho:'conejo (la hembra es la coneja)',da:'Abono para el huerto',
+  prod:{e:'💩',name:'Abono',every:90,abono:1,info:'Las cagarrutas de conejo abonan la tierra sin quemar las plantas.'},
+  refuse:{maiz:'El maíz es difícil de digerir para un conejo.'},
+  facts:['Sus dientes crecen toda la vida; roer heno los mantiene cortos.','La zanahoria tiene mucho azúcar: para un conejo es solo un premio. Su comida principal es el heno.','Ve casi todo a su alrededor, pero tiene un punto ciego justo delante del hocico.','Cuando está muy contento da saltitos y giros en el aire.']},
+ {id:'cabra',name:'Canela',g:'a',species:'cabra',lvl:4,diet:'Herbívora y rumiante',herb:true,eats:['hierba','trebol','heno','zanahoria','manzana','maiz','lechuga','calabaza','semillas'],fav:'trebol',sound:'¡Meeee!',
+  cria:'cabrito',macho:'macho cabrío',da:'Leche, y con ella queso de cabra',
+  prod:{e:'🥛',name:'Leche de cabra',every:90,coins:8,info:'Con la leche de cabra se hace un queso muy rico.'},
+  facts:['No come latas: es muy curiosa y lo mordisquea todo para investigar.','Sus pupilas son rectangulares, como las de la oveja.','Es una gran escaladora: sube por rocas y hasta por árboles.','Es rumiante: su estómago tiene cuatro partes.']},
+];
+const CROPS=[
+ {id:'hierba',name:'Hierba',e:'🌿',cost:1,secs:30,y:3,real:'En la vida real la hierba brota en una o dos semanas.'},
+ {id:'trebol',name:'Trébol',e:'☘️',cost:1,secs:40,y:3,real:'El trébol brota en una semana y además abona la tierra.'},
+ {id:'lechuga',name:'Lechuga',e:'🥬',cost:2,secs:60,y:2,real:'En la vida real la lechuga tarda unos 50 o 60 días.'},
+ {id:'zanahoria',name:'Zanahoria',e:'🥕',cost:2,secs:80,y:2,real:'La zanahoria tarda unos 75 días y crece bajo tierra.'},
+ {id:'semillas',name:'Girasol',e:'🌻',cost:2,secs:90,y:3,real:'El girasol tarda unos 3 meses. De joven gira para seguir al sol.'},
+ {id:'maiz',name:'Maíz',e:'🌽',cost:3,secs:120,y:2,real:'El maíz tarda 3 o 4 meses y puede medir más de 2 metros.'},
+ {id:'calabaza',name:'Calabaza',e:'🎃',cost:3,secs:150,y:2,real:'La calabaza tarda 3 o 4 meses. ¡Algunas pesan más de 500 kilos!'},
+];
+const CR=Object.fromEntries(CROPS.map(c=>[c.id,c]));
+const ACC={
+ paja:{name:'Sombrero de paja',e:'👒',p:25,slot:'head'},
+ gorra:{name:'Gorra',e:'🧢',p:20,slot:'head'},
+ vaquero:{name:'Sombrero vaquero',e:'🤠',p:40,slot:'head'},
+ corona:{name:'Corona',e:'👑',p:80,slot:'head'},
+ flor:{name:'Flor',e:'🌸',p:12,slot:'deco'},
+ lazo:{name:'Lazo',e:'🎀',p:15,slot:'deco'},
+ gafas:{name:'Gafas de sol',e:'🕶️',p:30,slot:'face'},
+};
+const QUIZ=[
+ {q:'¿En cuántas partes se divide el estómago de una vaca?',o:['Cuatro','Una','Dos'],x:'Rumen, retículo, omaso y abomaso. Por eso puede digerir la hierba.'},
+ {q:'¿Por qué se revuelcan los cerdos en el barro?',o:['Para refrescarse, porque casi no sudan','Porque les gusta estar sucios','Para esconderse de las gallinas'],x:'El barro los enfría y les protege la piel del sol.'},
+ {q:'¿Con qué tritura la comida una gallina si no tiene dientes?',o:['Con piedrecitas en la molleja','Con el pico','No la tritura'],x:'Las gallinas tragan piedrecitas que muelen el grano dentro de la molleja.'},
+ {q:'¿Cada cuánto se suele esquilar a una oveja?',o:['Una vez al año','Cada semana','Nunca'],x:'Su lana crece sin parar, así que se esquila normalmente una vez al año.'},
+ {q:'¿Qué forma tienen las pupilas de una oveja o una cabra?',o:['Rectangular','Redonda','De estrella'],x:'Las pupilas rectangulares les dan una vista muy amplia para vigilar a su alrededor.'},
+ {q:'¿Puede vomitar un caballo?',o:['No','Sí, como nosotros','Solo si come mucho'],x:'Un caballo no puede vomitar. Por eso hay que vigilar lo que come.'},
+ {q:'¿Cómo se llama la cría del caballo?',o:['Potro','Ternero','Cordero'],x:'La cría del caballo es el potro. El ternero es de la vaca y el cordero de la oveja.'},
+ {q:'¿Cómo se llama la cría de la vaca?',o:['Ternero','Lechón','Pollito'],x:'La vaca tiene terneros. El lechón es la cría del cerdo.'},
+ {q:'¿Cómo se llama la cría del conejo?',o:['Gazapo','Cabrito','Potro'],x:'La cría del conejo es el gazapo. El cabrito es la cría de la cabra.'},
+ {q:'¿Cómo se llama la cría de la cabra?',o:['Cabrito','Patito','Ternero'],x:'La cabra tiene cabritos.'},
+ {q:'¿Qué come un animal herbívoro?',o:['Solo plantas','Solo carne','Plantas y animales'],x:'Herbívoro viene de “hierba”: come plantas. La vaca, la oveja y el caballo son herbívoros.'},
+ {q:'¿Qué es un animal omnívoro?',o:['El que come plantas y animales','El que solo come carne','El que no come nunca'],x:'El cerdo, la gallina y el pato son omnívoros: comen de todo, también gusanos.'},
+ {q:'¿Qué dulce es tóxico para caballos y perros?',o:['El chocolate','La zanahoria','La manzana'],x:'El chocolate lleva teobromina, que les sienta muy mal.'},
+ {q:'¿Qué fruta es peligrosa para las gallinas y otras aves?',o:['El aguacate','La manzana','La calabaza'],x:'El aguacate tiene persina, tóxica para las aves.'},
+ {q:'¿Es bueno dar pan a los patos?',o:['No, casi no les alimenta y les sienta mal','Sí, es su comida favorita','Solo pan de molde'],x:'Mejor lechuga, maíz o guisantes. El pan les llena la tripa sin alimentarlos.'},
+ {q:'¿Cuántos huevos puede poner como mucho una gallina en un día?',o:['Uno','Cinco','Diez'],x:'Formar un huevo le lleva unas 25 horas, así que pone como mucho uno al día.'},
+ {q:'¿Qué hace la vaca cuando rumia?',o:['Vuelve a masticar comida que ya tragó','Duerme de pie','Da leche'],x:'Rumiar es devolver la comida a la boca para masticarla otra vez.'},
+ {q:'¿Cómo se llama el macho de la oveja?',o:['Carnero','Toro','Gallo'],x:'El macho de la oveja es el carnero. El toro es el macho de la vaca.'},
+ {q:'¿Qué sentido tiene muy desarrollado el cerdo?',o:['El olfato','La vista','El oído'],x:'Su olfato es tan bueno que se usa para buscar trufas.'},
+ {q:'¿Cuánta agua puede beber una vaca lechera en un día?',o:['Unos 100 litros','Un vaso','2 litros'],x:'¡Necesita muchísima agua para producir leche!'},
+ {q:'¿Cuántas caras de otras ovejas puede recordar una oveja?',o:['Unas 50','Ninguna','Solo la suya'],x:'Las ovejas reconocen y recuerdan unas 50 caras durante años.'},
+ {q:'¿Puede un caballo dormir de pie?',o:['Sí, dormita bloqueando sus patas','No, nunca','Solo si está enfermo'],x:'Dormita de pie, pero para el sueño profundo se tumba.'},
+ {q:'¿Por qué no se mojan las plumas del pato?',o:['Las cubre con una grasa que fabrica él mismo','Porque nunca se mete en el agua','Porque son de plástico'],x:'Una glándula junto a la cola fabrica grasa, y el pato la extiende con el pico.'},
+ {q:'¿Para qué tiene el pato membranas entre los dedos?',o:['Para nadar','Para volar','Para escarbar'],x:'Las patas palmeadas funcionan como aletas.'},
+ {q:'¿Cuál es la comida principal de un conejo?',o:['El heno','La zanahoria','El chocolate'],x:'La zanahoria tiene mucho azúcar y es solo un premio. El heno le desgasta los dientes, que crecen sin parar.'},
+ {q:'¿Comen latas las cabras?',o:['No, solo las mordisquean por curiosidad','Sí, les encantan','Solo las de refresco'],x:'Las cabras investigan con la boca, pero comen plantas.'},
+ {q:'¿Cuánto tarda en crecer una zanahoria de verdad?',o:['Unos 75 días','Un día','Dos años'],x:'Tarda unos dos meses y medio y crece bajo tierra.'},
+ {q:'¿Qué es el abono?',o:['Algo que alimenta la tierra, como el estiércol','Un tipo de semilla','Un insecto'],x:'El estiércol de caballo o de conejo devuelve nutrientes a la tierra.'},
+ {q:'¿Qué nos da la gallina?',o:['Huevos','Lana','Leche'],x:'La gallina pone huevos. La lana viene de la oveja.'},
+ {q:'¿Qué hace el veterinario?',o:['Cuida la salud de los animales','Planta zanahorias','Esquila ovejas'],x:'El veterinario o la veterinaria cura a los animales, les pone vacunas y les hace revisiones.'},
+];
+const MEMO=[['🐄','Vaca','🥛','Leche'],['🐔','Gallina','🥚','Huevo'],['🐑','Oveja','🧶','Lana'],['🐝','Abeja','🍯','Miel'],['🐐','Cabra','🧀','Queso'],['🐖','Cerdo','🍄','Trufa']];
+const EMOJI={vaca:'🐄',cerdo:'🐖',gallina:'🐔',oveja:'🐑',caballo:'🐴',pato:'🦆',conejo:'🐇',cabra:'🐐'};
+const ROOMS=[
+ {id:'comer',name:'Comer',e:'🍽️',title:'Comedero'},
+ {id:'lavar',name:'Lavar',e:'🛁',title:'Lavadero'},
+ {id:'dormir',name:'Dormir',e:'🌙',title:'Establo'},
+ {id:'jugar',name:'Prado',e:'⚽',title:'Prado'},
+ {id:'huerto',name:'Huerto',e:'🌱',title:'Huerto'},
+ {id:'tienda',name:'Tienda',e:'🛍️',title:'Tienda'},
+];
+const STATS=[
+ {k:'hunger',name:'Comida',e:'🍎',low:'Tengo hambre… ¿Vamos al Comedero?'},
+ {k:'hyg',name:'Limpieza',e:'🧼',low:'Estoy muy sucio… ¡Necesito un baño!'},
+ {k:'energy',name:'Energía',e:'⚡',low:'Tengo sueño… Llévame al Establo.'},
+ {k:'fun',name:'Diversión',e:'🎈',low:'Me aburro… ¿Jugamos en el Prado?'},
+];
+
+/* ---------- dibujo ---------- */
+const INK='#3a2a1f';
+const S=`stroke="${INK}" stroke-width="4"`;
+const art={
+ vaca:u=>({eyes:[[76,100],[124,100]],er:13,mouth:[100,160],hat:[100,42,1],svg:`
+  <ellipse cx="38" cy="82" rx="20" ry="10" transform="rotate(-20 38 82)" fill="#fffaf2" ${S}/>
+  <ellipse cx="162" cy="82" rx="20" ry="10" transform="rotate(20 162 82)" fill="#fffaf2" ${S}/>
+  <path d="M70 54 q-12 -14 0 -28 q0 14 12 20z" fill="#f2deb0" ${S} stroke-linejoin="round"/>
+  <path d="M130 54 q12 -14 0 -28 q0 14 -12 20z" fill="#f2deb0" ${S} stroke-linejoin="round"/>
+  <clipPath id="c${u}"><ellipse cx="100" cy="112" rx="72" ry="74"/></clipPath>
+  <ellipse cx="100" cy="112" rx="72" ry="74" fill="#fffaf2"/>
+  <g clip-path="url(#c${u})" fill="#2f2622">
+   <path d="M20 90 q20 -30 40 -10 q8 22 -14 30 q-20 8 -26 -20z"/>
+   <path d="M128 40 q26 -6 34 18 q-4 22 -26 16 q-18 -8 -8 -34z"/>
+   <path d="M150 140 q24 -6 30 18 l-10 30 q-26 0 -26 -22z"/>
+  </g>
+  <ellipse cx="100" cy="112" rx="72" ry="74" fill="none" ${S}/>
+  <ellipse cx="100" cy="150" rx="44" ry="28" fill="#f4b5ab" ${S}/>
+  <ellipse cx="84" cy="141" rx="5" ry="7" fill="${INK}"/><ellipse cx="116" cy="141" rx="5" ry="7" fill="${INK}"/>`}),
+ cerdo:u=>({eyes:[[72,98],[128,98]],er:13,mouth:[100,158],hat:[100,44,1],svg:`
+  <path d="M50 66 L40 22 L84 46 Z" fill="#f59fb2" ${S} stroke-linejoin="round"/>
+  <path d="M150 66 L160 22 L116 46 Z" fill="#f59fb2" ${S} stroke-linejoin="round"/>
+  <ellipse cx="100" cy="112" rx="74" ry="72" fill="#f8b0c0" ${S}/>
+  <ellipse cx="56" cy="128" rx="12" ry="7" fill="#f27f99" opacity=".6"/><ellipse cx="144" cy="128" rx="12" ry="7" fill="#f27f99" opacity=".6"/>
+  <ellipse cx="100" cy="128" rx="27" ry="19" fill="#f28aa2" ${S}/>
+  <ellipse cx="91" cy="128" rx="4.5" ry="7" fill="${INK}"/><ellipse cx="109" cy="128" rx="4.5" ry="7" fill="${INK}"/>`}),
+ gallina:u=>({eyes:[[76,96],[124,96]],er:12,beak:true,hat:[100,30,.9],svg:`
+  <circle cx="86" cy="42" r="13" fill="#e2412f" ${S}/><circle cx="100" cy="34" r="14" fill="#e2412f" ${S}/><circle cx="114" cy="42" r="13" fill="#e2412f" ${S}/>
+  <path d="M84 186 v10 m0 0 l-8 4 m8 -4 l8 4 M116 186 v10 m0 0 l-8 4 m8 -4 l8 4" stroke="#e8902a" stroke-width="5" stroke-linecap="round" fill="none"/>
+  <ellipse cx="100" cy="116" rx="66" ry="74" fill="#fffdf6" ${S}/>
+  <ellipse cx="40" cy="128" rx="15" ry="28" transform="rotate(18 40 128)" fill="#f3ead6" ${S}/>
+  <ellipse cx="160" cy="128" rx="15" ry="28" transform="rotate(-18 160 128)" fill="#f3ead6" ${S}/>
+  <ellipse cx="100" cy="136" rx="7" ry="11" fill="#e2412f" stroke="${INK}" stroke-width="3"/>
+  <path class="mouth" d="M91 120 L109 120 L100 136 Z" fill="#d97a1e" stroke="${INK}" stroke-width="3" stroke-linejoin="round" visibility="hidden"/>
+  <path d="M84 110 Q100 100 116 110 L100 126 Z" fill="#f5a623" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/>`}),
+ oveja:u=>{let w='';for(let i=0;i<14;i++){const t=i/14*Math.PI*2;w+=`<circle cx="${(100+68*Math.cos(t)).toFixed(1)}" cy="${(112+70*Math.sin(t)).toFixed(1)}" r="23" fill="#fbf9f4" ${S}/>`}
+  return {eyes:[[84,110],[116,110]],er:11,rect:true,mouth:[100,148],mouthInk:'#efe4d8',hat:[100,54,1],svg:`${w}
+  <ellipse cx="100" cy="112" rx="68" ry="70" fill="#fbf9f4"/>
+  <ellipse cx="50" cy="106" rx="16" ry="8" transform="rotate(-15 50 106)" fill="#4a3d38" stroke="${INK}" stroke-width="3"/>
+  <ellipse cx="150" cy="106" rx="16" ry="8" transform="rotate(15 150 106)" fill="#4a3d38" stroke="${INK}" stroke-width="3"/>
+  <ellipse cx="100" cy="120" rx="40" ry="50" fill="#4a3d38" ${S}/>
+  <circle cx="86" cy="72" r="14" fill="#fbf9f4" stroke="${INK}" stroke-width="3"/><circle cx="114" cy="72" r="14" fill="#fbf9f4" stroke="${INK}" stroke-width="3"/><circle cx="100" cy="64" r="16" fill="#fbf9f4" stroke="${INK}" stroke-width="3"/>
+  <ellipse cx="92" cy="136" rx="3" ry="4" fill="#211915"/><ellipse cx="108" cy="136" rx="3" ry="4" fill="#211915"/>`}},
+ caballo:u=>({eyes:[[72,100],[128,100]],er:13,mouth:[100,168],hat:[100,32,.95],svg:`
+  <path d="M60 64 L56 18 L90 44 Z" fill="#b5713d" ${S} stroke-linejoin="round"/>
+  <path d="M140 64 L144 18 L110 44 Z" fill="#b5713d" ${S} stroke-linejoin="round"/>
+  <ellipse cx="100" cy="114" rx="70" ry="76" fill="#b5713d" ${S}/>
+  <path d="M92 52 Q100 46 108 52 L104 116 Q100 120 96 116Z" fill="#fff6ea"/>
+  <g fill="#4b2a16" stroke="${INK}" stroke-width="3"><circle cx="82" cy="44" r="14"/><circle cx="118" cy="44" r="14"/><circle cx="100" cy="36" r="16"/></g>
+  <ellipse cx="100" cy="156" rx="42" ry="30" fill="#e3b78d" ${S}/>
+  <ellipse cx="84" cy="150" rx="5" ry="7" fill="${INK}"/><ellipse cx="116" cy="150" rx="5" ry="7" fill="${INK}"/>`}),
+ pato:u=>({eyes:[[78,92],[122,92]],er:12,beak:true,hat:[100,46,1],svg:`
+  <path d="M94 44 q-2 -18 8 -12 q6 -12 10 4" fill="#ffd84d" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M74 186 l-12 12 h24z M126 186 l-12 12 h24z" fill="#f59a23" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
+  <ellipse cx="100" cy="116" rx="68" ry="74" fill="#ffd84d" ${S}/>
+  <ellipse cx="38" cy="132" rx="14" ry="28" transform="rotate(16 38 132)" fill="#f5c228" ${S}/>
+  <ellipse cx="162" cy="132" rx="14" ry="28" transform="rotate(-16 162 132)" fill="#f5c228" ${S}/>
+  <path class="mouth" d="M80 124 Q100 148 120 124Z" fill="#d9761c" stroke="${INK}" stroke-width="3" stroke-linejoin="round" visibility="hidden"/>
+  <path d="M70 116 Q100 100 130 116 Q118 130 100 130 Q82 130 70 116Z" fill="#f59a23" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/>
+  <circle cx="93" cy="112" r="2" fill="${INK}"/><circle cx="107" cy="112" r="2" fill="${INK}"/>`}),
+ conejo:u=>({eyes:[[76,106],[124,106]],er:12,mouth:[100,146],hat:[100,58,.9],svg:`
+  <ellipse cx="76" cy="34" rx="15" ry="42" transform="rotate(-8 76 34)" fill="#ece8ee" ${S}/>
+  <ellipse cx="76" cy="36" rx="7" ry="30" transform="rotate(-8 76 36)" fill="#f5b3c3"/>
+  <ellipse cx="124" cy="34" rx="15" ry="42" transform="rotate(8 124 34)" fill="#ece8ee" ${S}/>
+  <ellipse cx="124" cy="36" rx="7" ry="30" transform="rotate(8 124 36)" fill="#f5b3c3"/>
+  <ellipse cx="100" cy="120" rx="68" ry="70" fill="#ece8ee" ${S}/>
+  <ellipse cx="100" cy="142" rx="36" ry="26" fill="#fff"/>
+  <path d="M68 136 L40 130 M68 142 L40 146 M132 136 L160 130 M132 142 L160 146" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
+  <path d="M93 127 L107 127 L100 135Z" fill="#f08aa2" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>`}),
+ cabra:u=>({eyes:[[74,102],[126,102]],er:13,rect:true,mouth:[100,162],hat:[100,44,1],svg:`
+  <path d="M78 58 Q62 18 38 24 Q58 32 68 62Z" fill="#9b9184" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/>
+  <path d="M122 58 Q138 18 162 24 Q142 32 132 62Z" fill="#9b9184" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/>
+  <ellipse cx="36" cy="98" rx="22" ry="9" transform="rotate(22 36 98)" fill="#efe6d8" ${S}/>
+  <ellipse cx="164" cy="98" rx="22" ry="9" transform="rotate(-22 164 98)" fill="#efe6d8" ${S}/>
+  <ellipse cx="100" cy="112" rx="66" ry="74" fill="#efe6d8" ${S}/>
+  <path d="M88 180 Q100 210 112 180Z" fill="#d6c4ad" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
+  <ellipse cx="100" cy="152" rx="34" ry="24" fill="#e0cdb6" ${S}/>
+  <ellipse cx="90" cy="146" rx="4" ry="5" fill="${INK}"/><ellipse cx="110" cy="146" rx="4" ry="5" fill="${INK}"/>`}),
+};
+const ACC_SVG={
+ paja:`<ellipse cx="0" cy="0" rx="48" ry="11" fill="#f1cd5c" stroke="${INK}" stroke-width="3"/><path d="M-25 1 Q-26 -32 0 -32 Q26 -32 25 1Z" fill="#f1cd5c" stroke="${INK}" stroke-width="3"/><path d="M-25 -7 Q0 -3 25 -7 L25 -1 Q0 3 -25 -1Z" fill="#c4493a"/>`,
+ gorra:`<path d="M-30 2 Q-32 -34 0 -34 Q32 -34 30 2Z" fill="#3f7fd1" stroke="${INK}" stroke-width="3"/><path d="M14 0 Q46 -6 56 4 Q36 12 10 6Z" fill="#2f63a8" stroke="${INK}" stroke-width="3"/><circle cx="0" cy="-34" r="4" fill="#2f63a8" stroke="${INK}" stroke-width="2"/>`,
+ vaquero:`<path d="M-54 -2 Q-50 10 0 10 Q50 10 54 -2 Q40 4 0 4 Q-40 4 -54 -2Z" fill="#8a5a34" stroke="${INK}" stroke-width="3"/><path d="M-26 4 Q-30 -34 -12 -32 Q0 -24 12 -32 Q30 -34 26 4Z" fill="#a7703f" stroke="${INK}" stroke-width="3"/><path d="M-26 -4 L26 -4 L26 2 L-26 2Z" fill="#4b2a16"/>`,
+ corona:`<path d="M-28 2 L-30 -28 L-15 -12 L0 -34 L15 -12 L30 -28 L28 2Z" fill="#f6c445" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><circle cx="0" cy="-6" r="5" fill="#e2412f"/><circle cx="-16" cy="-4" r="3.5" fill="#3f7fd1"/><circle cx="16" cy="-4" r="3.5" fill="#45a849"/>`,
+ flor:[0,72,144,216,288].map(d=>`<circle cx="${(9*Math.cos(d*Math.PI/180)).toFixed(1)}" cy="${(9*Math.sin(d*Math.PI/180)).toFixed(1)}" r="7" fill="#ff8fb1" stroke="${INK}" stroke-width="2"/>`).join('')+`<circle r="6" fill="#f6c445" stroke="${INK}" stroke-width="2"/>`,
+ lazo:`<path d="M0 0 L-18 -12 L-18 12Z M0 0 L18 -12 L18 12Z" fill="#e2412f" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><circle r="6" fill="#c4302a" stroke="${INK}" stroke-width="2"/>`,
+};
+function accSVG(d,o){
+ if(!o)return'';let s='';const[x,y,k]=d.hat;
+ if(o.face==='gafas'){const r=d.er+5;const[[x1,y1],[x2,y2]]=d.eyes;
+  s+=`<g class="glasses"><path d="M${x1+r} ${y1} Q100 ${y1-8} ${x2-r} ${y2}" stroke="#111" stroke-width="4" fill="none"/>`+d.eyes.map(([ex,ey])=>`<circle cx="${ex}" cy="${ey}" r="${r}" fill="#1e1612" stroke="#111" stroke-width="3"/><path d="M${ex-r*.5} ${ey-r*.25} l6 -5" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".7"/>`).join('')+`</g>`}
+ if(o.head&&ACC_SVG[o.head])s+=`<g transform="translate(${x} ${y}) scale(${k})">${ACC_SVG[o.head]}</g>`;
+ if(o.deco&&ACC_SVG[o.deco])s+=`<g transform="translate(${x+34*k} ${y+8})">${ACC_SVG[o.deco]}</g>`;
+ return s;
+}
+function petSVG(a,u,outfit){
+ const d=art[a.id](u);let eyes='',shut='',brows='';
+ d.eyes.forEach(([x,y],i)=>{const r=d.er,s=i?-1:1;
+  const pupil=d.rect?`<rect x="${x-r*.62}" y="${y-r*.22+2}" width="${r*1.24}" height="${r*.5}" rx="${r*.25}" fill="#1e1612"/>`:`<circle cx="${x}" cy="${y+2}" r="${r*.58}" fill="#1e1612"/>`;
+  eyes+=`<g class="eye"><ellipse cx="${x}" cy="${y}" rx="${r}" ry="${r*1.15}" fill="#fff" stroke="${INK}" stroke-width="3"/><g class="pupil">${pupil}<circle cx="${x+3}" cy="${y-3}" r="${r*.2}" fill="#fff"/></g></g>`;
+  shut+=`<path class="shut" d="M${x-r} ${y} Q${x} ${y+r*.8} ${x+r} ${y}" fill="none" stroke="${d.mouthInk||INK}" stroke-width="4" stroke-linecap="round"/>`;
+  brows+=`<path class="brows" d="M${x-s*r} ${y-r-4} L${x+s*r*.7} ${y-r-11}" stroke="${d.mouthInk||INK}" stroke-width="4" stroke-linecap="round"/>`;});
+ const mouth=d.beak?'':`<path class="mouth" d="" stroke="${d.mouthInk||INK}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+ const dirt=`<g class="dirt" fill="#6b4a2b" opacity="0"><circle cx="58" cy="134" r="10"/><circle cx="66" cy="146" r="6"/><circle cx="140" cy="76" r="8"/><circle cx="148" cy="142" r="12"/><circle cx="134" cy="156" r="6"/><circle cx="112" cy="176" r="8"/><circle cx="52" cy="98" r="6"/></g>`;
+ return `<svg viewBox="0 0 200 210" data-id="${a.id}" aria-hidden="true"><ellipse cx="100" cy="200" rx="62" ry="8" fill="rgba(0,0,0,.18)"/>${d.svg}${eyes}${shut}${brows}${mouth}${dirt}${accSVG(d,outfit)}</svg>`;
+}
+const ARTX={};ANIMALS.forEach(a=>ARTX[a.id]=art[a.id]('x'));
+function mouthD(a,kind){
+ const d=ARTX[a.id];if(d.beak)return null;const[x,y]=d.mouth;
+ if(kind==='happy')return[`M${x-16} ${y-5} Q${x} ${y+18} ${x+16} ${y-5} Q${x} ${y+1} ${x-16} ${y-5}Z`,'#8a2f2f'];
+ if(kind==='sad')return[`M${x-12} ${y+6} Q${x} ${y-6} ${x+12} ${y+6}`,'none'];
+ if(kind==='open')return[`M${x-11} ${y-4} Q${x} ${y-9} ${x+11} ${y-4} Q${x+12} ${y+12} ${x} ${y+13} Q${x-12} ${y+12} ${x-11} ${y-4}Z`,'#8a2f2f'];
+ if(kind==='chew')return[`M${x-9} ${y} Q${x} ${y+7} ${x+9} ${y}Z`,'#8a2f2f'];
+ return[`M${x-12} ${y+1} Q${x} ${y+6} ${x+12} ${y+1}`,'none'];
+}
+
+/* ---------- estado ---------- */
+const KEY='mi-granjita-v1';
+const $=s=>document.querySelector(s);
+const clamp=v=>Math.max(0,Math.min(100,v));
+const cur=()=>ANIMALS.find(a=>a.id===state.current);
+const cs=()=>state.animals[state.current];
+const unlocked=a=>state.level>=a.lvl;
+let state,eating=false,tickleAt=0,factIdx={},complainAt=Date.now(),pigNote=false,game=null;
+function freshAnimal(){return{hunger:68,hyg:82,energy:76,fun:58,asleep:false,sick:false,outfit:{},prodAt:Date.now()+40000}}
+function fresh(){const animals={};ANIMALS.forEach(a=>animals[a.id]=freshAnimal());return{coins:40,animals,current:'vaca',room:'comer',last:Date.now(),muted:false}}
+function migrate(s){
+ const f=freshAnimal();
+ ANIMALS.forEach(a=>{s.animals[a.id]=Object.assign({},f,s.animals[a.id]||{});if(!s.animals[a.id].outfit)s.animals[a.id].outfit={}});
+ s.level=s.level||1;s.xp=s.xp||0;s.pantry=s.pantry||{};s.owned=s.owned||[];s.tool=s.tool||'hierba';
+ s.plots=s.plots||Array.from({length:6},()=>({c:null,prog:0,w:false}));
+ if(!ROOMS.some(r=>r.id===s.room))s.room='comer';
+ const ca=ANIMALS.find(a=>a.id===s.current);if(!ca||s.level<ca.lvl)s.current='vaca';
+ return s;
+}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.animals)return s}catch(e){}return null}
+function save(){state.last=Date.now();try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+function decay(sec,k){
+ for(const a of ANIMALS){if(!unlocked(a))continue;const v=state.animals[a.id];
+  if(v.asleep){v.energy=clamp(v.energy+1.1*sec*k);v.hunger=clamp(v.hunger-.04*sec*k)}
+  else{v.energy=clamp(v.energy-(v.sick?.12:.06)*sec*k);v.hunger=clamp(v.hunger-.1*sec*k);v.fun=clamp(v.fun-(v.sick?.13:.08)*sec*k)}
+  v.hyg=clamp(v.hyg-.05*sec*k);}
+ for(const p of state.plots)if(p.c&&p.prog<1)p.prog=Math.min(1,p.prog+sec/CR[p.c].secs*(p.w?1:.5));
+}
+const g=(a,m,f)=>a.g==='a'?f:m;
+const need=l=>60*l;
+function addXP(n){
+ state.xp+=n;let up=false;
+ while(state.xp>=need(state.level)){state.xp-=need(state.level);state.level++;state.coins+=20;up=true}
+ if(up){const nu=ANIMALS.filter(a=>a.lvl===state.level);sfx.coin();hearts(4,'⭐');
+  say(`<b>¡Nivel ${state.level}!</b> Ganas 20 monedas.`+(nu.length?` ¡Ya puedes cuidar a ${nu.map(a=>`${a.name} ${g(a,'el','la')} ${a.species}`).join(' y ')}!`:''));renderTabs()}
+}
+
+/* ---------- sonido ---------- */
+let AC;function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}return AC}
+function tone(f1,f2,dur,type='sine',vol=.12,delay=0){if(state.muted)return;const a=ac();if(!a)return;const t=a.currentTime+delay,o=a.createOscillator(),gn=a.createGain();o.type=type;o.frequency.setValueAtTime(f1,t);o.frequency.exponentialRampToValueAtTime(f2,t+dur);gn.gain.setValueAtTime(vol,t);gn.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(gn).connect(a.destination);o.start(t);o.stop(t+dur+.02)}
+const sfx={
+ vaca:()=>{tone(190,120,.9,'sawtooth',.07)},
+ cerdo:()=>{tone(320,200,.16,'square',.06);tone(300,190,.16,'square',.06,.2)},
+ gallina:()=>{[0,.14,.28].forEach(d=>tone(900,620,.1,'triangle',.1,d))},
+ oveja:()=>{tone(430,380,.7,'sawtooth',.06)},
+ caballo:()=>{tone(800,300,.6,'sawtooth',.06)},
+ pato:()=>{tone(520,380,.14,'square',.06);tone(520,380,.14,'square',.06,.2)},
+ conejo:()=>{[0,.08,.16].forEach(d=>tone(1500,1300,.04,'sine',.05,d))},
+ cabra:()=>{tone(560,500,.6,'sawtooth',.06)},
+ eat:()=>{tone(500,300,.08,'square',.05);tone(500,300,.08,'square',.05,.18)},
+ no:()=>{tone(220,140,.25,'square',.07)},
+ coin:()=>{tone(880,1320,.12,'triangle',.1);tone(1320,1760,.12,'triangle',.08,.1)},
+ pop:()=>{tone(700+Math.random()*400,1200,.05,'sine',.05)},
+ water:()=>{for(let i=0;i<8;i++)tone(1200+Math.random()*900,400,.08,'sine',.03,i*.06)},
+ click:()=>tone(600,500,.05,'triangle',.05),
+};
+
+/* ---------- interfaz ---------- */
+function renderTabs(){
+ $('#tabs').innerHTML=ANIMALS.map(a=>{const v=state.animals[a.id],un=unlocked(a);const alert=un&&(v.sick||STATS.some(s=>v[s.k]<25));
+  return `<button class="tab${un?'':' locked'}" role="tab" aria-selected="${a.id===state.current}" data-id="${a.id}" aria-label="${un?a.name+', '+a.species:'Bloqueado hasta el nivel '+a.lvl}">${petSVG(a,'t'+a.id,un?v.outfit:null)}${un?'':`<span class="lock">Nv ${a.lvl}</span>`}${alert?'<span class="dot">!</span>':''}</button>`}).join('');
+ document.querySelectorAll('.tab:not(.locked) svg').forEach(s=>{const a=ANIMALS.find(x=>x.id===s.dataset.id);faceOn(s,a,state.animals[a.id])});
+}
+function renderStats(){
+ const v=cs();
+ $('#stats').innerHTML=STATS.map(s=>{const n=Math.round(v[s.k]);const c=n<25?'var(--bad)':n<55?'var(--warn)':'var(--good)';
+  return `<div class="stat"><div class="ring${n<25?' low':''}" style="--v:${n};--c:${c}"><span>${s.e}</span></div><b>${s.name} ${n}</b></div>`}).join('')
+  +`<div class="stat" title="Experiencia ${state.xp} de ${need(state.level)}"><div class="ring" style="--v:${Math.round(state.xp/need(state.level)*100)};--c:var(--coin)"><span class="lvn">${state.level}</span></div><b>Nivel</b></div>`;
+ $('#coins').textContent=state.coins;
+}
+function mood(v){const avg=(v.hunger+v.hyg+v.energy+v.fun)/4,min=Math.min(v.hunger,v.hyg,v.energy,v.fun);return(v.sick||min<25)?'sad':avg>60?'happy':'ok'}
+function faceOn(svg,a,v){
+ if(!svg)return;const m=mood(v);
+ svg.classList.toggle('sleep',v.asleep);svg.classList.toggle('sad',m==='sad'&&!v.asleep);
+ svg.querySelector('.dirt').setAttribute('opacity',Math.max(0,(65-v.hyg)/65).toFixed(2));
+ const md=mouthD(a,v.asleep?'ok':m);const p=svg.querySelector('.mouth');
+ if(md&&p){p.setAttribute('d',md[0]);p.setAttribute('fill',md[1])}
+}
+function renderPet(){const a=cur(),v=cs();$('#pet').innerHTML=petSVG(a,'m',v.outfit)+`<div class="petname${v.sick?' sick':''}">${a.name} · ${a.species}${v.sick?' · '+g(a,'malito','malita'):''}</div>`;$('#pet').setAttribute('aria-label','Acariciar a '+a.name);$('#pet').classList.toggle('sick',v.sick);updateFace()}
+function updateFace(){
+ const v=cs();if(!eating)faceOn($('#pet svg'),cur(),v);
+ const night=state.room==='dormir'&&v.asleep;$('#scene').classList.toggle('night',night);
+ let z=$('#fx .zgroup');
+ if(v.asleep&&state.room!=='huerto'&&!z){z=document.createElement('div');z.className='zgroup';z.innerHTML=[0,.8,1.6].map(d=>`<span class="zzz" style="left:62%;top:30%;animation-delay:${d}s">z</span>`).join('');$('#fx').appendChild(z)}
+ if((!v.asleep||state.room==='huerto')&&z)z.remove();
+ renderProd();
+}
+function prodReady(a,v){return Date.now()>=v.prodAt&&!v.asleep&&!v.sick&&mood(v)!=='sad'}
+function renderProd(){const a=cur(),v=cs(),b=$('#prod');const r=state.room!=='huerto'&&prodReady(a,v);b.hidden=!r;if(r&&b.textContent!==a.prod.e){b.textContent=a.prod.e;b.setAttribute('aria-label','Recoger '+a.prod.name)}}
+function renderScene(){
+ const r=ROOMS.find(r=>r.id===state.room);$('#roomname').textContent=r.title;
+ $('#scene').className='scene room-'+r.id;
+ const deco={comer:'<div class="win"></div><div class="trough"></div>',lavar:'',dormir:'<div class="win"><div class="moon"></div></div>',
+  jugar:'<div class="sun"></div><div class="cloud" style="top:12%;width:70px;animation-delay:-8s"></div><div class="cloud" style="top:26%;width:50px;animation-delay:-26s"></div><div class="fence"></div>',
+  huerto:'<div class="sun"></div><div class="cloud" style="top:6%;width:60px;animation-delay:-14s"></div>',tienda:'<div class="mirror"></div>'};
+ $('#deco').innerHTML=deco[r.id];
+ const isG=r.id==='huerto';$('#pet').hidden=isG;$('#garden').hidden=!isG;if(isG)renderGarden();
+ $('#rooms').innerHTML=ROOMS.map(x=>`<button class="room" data-room="${x.id}" aria-current="${x.id===state.room}"><span class="e">${x.e}</span>${x.name}</button>`).join('');
+ renderTray();updateFace();
+}
+function renderGarden(){
+ $('#garden').innerHTML=state.plots.map((p,i)=>{
+  if(!p.c)return `<button class="plot" data-i="${i}" aria-label="Parcela vacía"><span class="e" style="opacity:.5">➕</span><small>Plantar</small></button>`;
+  const c=CR[p.c];if(p.prog>=1)return `<button class="plot ripe" data-i="${i}" aria-label="Cosechar ${c.name}"><span class="e">${c.e}</span><small>¡Cosechar!</small></button>`;
+  const left=Math.ceil((1-p.prog)*c.secs/(p.w?1:.5));
+  return `<button class="plot" data-i="${i}" aria-label="${c.name} creciendo">${p.w?'<span class="w">💧</span>':''}<span class="e">${p.prog<.45?'🌱':'🌿'}</span><span class="bar"><i style="width:${Math.round(p.prog*100)}%"></i></span><small>${c.name} · ${left} s</small></button>`}).join('');
+}
+function renderTray(){
+ const a=cur(),v=cs(),t=$('#tray');
+ if(state.room==='comer'){
+  t.innerHTML=`<div class="hint">Arrastra la comida hasta ${a.name} o tócala. Lo que cosechas en el Huerto sale gratis.</div><div class="foods">${FOODS.map(f=>{const n=state.pantry[f.id]||0;
+   return `<button class="item" data-food="${f.id}" data-e="${f.e}" aria-label="${f.name}${n?', tienes '+n:', '+f.p+' monedas'}"><span class="e">${f.e}</span>${n?`<span class="p have">×${n}</span>`:`<span class="p"><i class="coin"></i>${f.p}</span>`}</button>`}).join('')}</div>`;
+  t.querySelectorAll('.item').forEach(b=>drag(b,{use:()=>feed(F[b.dataset.food]),dropOnPet:true}));
+ }else if(state.room==='lavar'){
+  t.innerHTML=`<div class="hint">Frota el jabón sobre ${a.name} y luego aclara con la ducha.</div><div class="actions"><button class="big" id="soap" data-e="🧼"><span class="e">🧼</span>Jabón</button><button class="big" id="shower"><span class="e">🚿</span>Ducha</button></div>`;
+  drag($('#soap'),{use:()=>say(`Mantén pulsado el jabón y frótalo sobre ${a.name}.`),move:scrub});
+  $('#shower').onclick=shower;
+ }else if(state.room==='dormir'){
+  t.innerHTML=`<div class="hint">${v.asleep?`${a.name} duerme y recupera energía.`:`Apaga la luz para que ${a.name} descanse.`}</div><div class="actions"><button class="big ${v.asleep?'hot':''}" id="lamp"><span class="e">${v.asleep?'💡':'🌙'}</span>${v.asleep?'Encender la luz':'Apagar la luz'}</button></div>`;
+  $('#lamp').onclick=lamp;
+ }else if(state.room==='jugar'){
+  t.innerHTML=`<div class="hint">Juega y aprende para ganar monedas.</div><div class="actions"><button class="big" id="bQuiz"><span class="e">❓</span>Quiz</button><button class="big" id="bCatch"><span class="e">🧺</span>Cesta</button><button class="big" id="bMem"><span class="e">🃏</span>Parejas</button><button class="big" id="bSnd"><span class="e">🔊</span>¿Quién soy?</button><button class="big" id="bFicha"><span class="e">📖</span>Ficha</button></div>`;
+  $('#bQuiz').onclick=openQuiz;$('#bCatch').onclick=openCatch;$('#bMem').onclick=openMemo;$('#bSnd').onclick=openSounds;$('#bFicha').onclick=openFicha;
+ }else if(state.room==='huerto'){
+  const ab=state.pantry.abono||0;
+  t.innerHTML=`<div class="hint">Elige semilla y toca una parcela. Toca una planta para regarla 💧 (crece el doble de rápido).</div><div class="foods">${CROPS.map(c=>`<button class="item${state.tool===c.id?' sel':''}" data-tool="${c.id}" aria-label="Semilla de ${c.name}, ${c.cost} monedas"><span class="e">${c.e}</span><span class="p"><i class="coin"></i>${c.cost}</span></button>`).join('')}<button class="item${state.tool==='abono'?' sel':''}" data-tool="abono" aria-label="Abono, tienes ${ab}"><span class="e">💩</span><span class="p have">×${ab}</span></button></div>`;
+  t.querySelectorAll('.item').forEach(b=>b.onclick=()=>{state.tool=b.dataset.tool;sfx.click();renderTray();
+   const c=CR[state.tool];say(c?`<b>${c.name}</b>: ${c.real}`:'El <b>abono</b> alimenta la tierra: toca una planta para que crezca de golpe. Te lo dan el caballo y el conejo.')});
+ }else{
+  t.innerHTML=`<div class="hint">Compra un accesorio y tócalo para ponérselo o quitárselo a ${a.name}.</div><div class="foods">${Object.entries(ACC).map(([id,x])=>{const own=state.owned.includes(id),on=v.outfit[x.slot]===id;
+   return `<button class="item${on?' on':''}" data-acc="${id}" aria-label="${x.name}${own?(on?', puesto':', comprado'):', '+x.p+' monedas'}"><span class="e">${x.e}</span>${own?`<span class="tag">${on?'Puesto':'Tuyo'}</span>`:`<span class="p"><i class="coin"></i>${x.p}</span>`}</button>`}).join('')}</div>
+   <div class="actions"><button class="big" id="bVet"><span class="e">🩺</span>Veterinario</button></div>`;
+  t.querySelectorAll('.item').forEach(b=>b.onclick=()=>wear(b.dataset.acc));
+  $('#bVet').onclick=openVet;
+ }
+}
+function renderAll(){renderTabs();renderStats();renderPet();renderScene()}
+
+/* ---------- burbuja ---------- */
+let sayT;
+function say(html,bad){const b=$('#bubble');b.innerHTML=html;b.classList.toggle('bad',!!bad);b.hidden=false;b.style.animation='none';b.offsetWidth;b.style.animation='';clearTimeout(sayT);sayT=setTimeout(()=>b.hidden=true,Math.max(3200,html.length*60))}
+
+/* ---------- arrastrar ---------- */
+let justDragged=false;
+function overPet(x,y){const r=$('#pet').getBoundingClientRect();const ix=r.width*.12,iy=r.height*.08;return x>r.left+ix&&x<r.right-ix&&y>r.top+iy&&y<r.bottom}
+function drag(el,{use,move,dropOnPet}){
+ el.addEventListener('click',()=>{if(justDragged){justDragged=false;return}use()});
+ el.addEventListener('pointerdown',e=>{
+  if(e.button>0)return;ac();
+  const sx=e.clientX,sy=e.clientY;let moved=false,ghost=null;
+  const mv=ev=>{if(!moved&&Math.hypot(ev.clientX-sx,ev.clientY-sy)>8){moved=true;ghost=document.createElement('div');ghost.className='ghost';ghost.textContent=el.dataset.e;document.body.appendChild(ghost)}
+   if(ghost){ghost.style.transform=`translate(${ev.clientX}px,${ev.clientY}px)`;if(move&&overPet(ev.clientX,ev.clientY))move(ev)}};
+  const up=ev=>{window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);
+   if(ghost)ghost.remove();if(moved){justDragged=true;setTimeout(()=>justDragged=false,50);if(dropOnPet&&ev.type==='pointerup'&&overPet(ev.clientX,ev.clientY))use()}};
+  window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);
+ });
+}
+
+/* ---------- acciones ---------- */
+function anim(cls){const p=$('#pet');p.classList.remove('jump','shake');void p.offsetWidth;p.classList.add(cls);setTimeout(()=>p.classList.remove(cls),600)}
+function asleepMsg(a){say(`Zzz… ${a.name} está ${g(a,'dormido','dormida')}. Enciende la luz en el Establo para despertar${g(a,'lo','la')}.`)}
+function sickMsg(a){say(`${a.name} está ${g(a,'malito','malita')}. Llévalo al <b>Veterinario</b> en la Tienda.`,true)}
+function whyNot(a,f){return f.bad||(a.refuse&&a.refuse[f.id])||(a.herb&&f.meat?`${a.name} es ${g(a,'herbívoro','herbívora')}: solo come plantas, nunca ${f.name.toLowerCase()}.`:`${a.name} no suele comer ${f.name.toLowerCase()}. Prueba con otra cosa.`)}
+function refuse(a,f){anim('shake');sfx.no();say(`<b>¡${f.name} no!</b> ${whyNot(a,f)}`,true)}
+function feed(f){
+ const a=cur(),v=cs();
+ if(v.asleep)return asleepMsg(a);
+ if(!a.eats.includes(f.id))return refuse(a,f);
+ if(v.hunger>=97)return say(`¡${g(a,'Estoy lleno','Estoy llena')}! Ya no me cabe nada.`);
+ const have=state.pantry[f.id]||0;
+ if(!have&&state.coins<f.p)return say('No tienes monedas suficientes. Gana más jugando en el Prado o cultiva en el Huerto.');
+ if(have)state.pantry[f.id]--;else state.coins-=f.p;
+ v.hunger=clamp(v.hunger+f.n);const fav=a.fav===f.id;v.fun=clamp(v.fun+(fav?12:f.f));
+ chew();sfx.eat();addXP(3);
+ if(fav){hearts(3);say(`<b>¡${f.name}!</b> Es mi comida favorita.`)}
+ else say(['¡Ñam, ñam!','¡Qué rico!','¡Gracias!','Mmm…'][Math.floor(Math.random()*4)]+` <b>+${f.n}</b> de comida`);
+ renderStats();renderTabs();if(have)renderTray();save();
+}
+function chew(){
+ const a=cur(),svg=$('#pet svg'),p=svg&&svg.querySelector('.mouth');if(!p)return;eating=true;let i=0;const beak=ARTX[a.id].beak;
+ const step=()=>{if(beak){p.setAttribute('visibility',i%2?'hidden':'visible')}else{const m=mouthD(a,i%2?'chew':'open');p.setAttribute('d',m[0]);p.setAttribute('fill',m[1])}
+  if(++i<8)setTimeout(step,140);else{eating=false;if(beak)p.setAttribute('visibility','hidden');updateFace()}};
+ step();
+}
+function fxAt(cls,x,y,html=''){const s=$('#scene').getBoundingClientRect();const d=document.createElement('div');d.className=cls;d.innerHTML=html;d.style.left=(x-s.left)+'px';d.style.top=(y-s.top)+'px';$('#fx').appendChild(d);return d}
+function hearts(n,ch='♥'){const el=$('#pet').hidden?$('#scene'):$('#pet');const r=el.getBoundingClientRect();for(let i=0;i<n;i++){const h=fxAt('heart'+(ch==='♥'?'':' e'),r.left+r.width*(.3+.4*Math.random()),r.top+r.height*.25,ch);h.style.animationDelay=i*.15+'s';setTimeout(()=>h.remove(),1800)}}
+let lastScrub=0;
+function scrub(ev){
+ const a=cur(),v=cs(),now=performance.now();if(now-lastScrub<70)return;lastScrub=now;
+ if(v.asleep){asleepMsg(a);return}
+ const sz=14+Math.random()*22;const b=fxAt('bub',ev.clientX-sz/2,ev.clientY-sz/2);b.style.width=b.style.height=sz+'px';b.style.animationDuration='6s';b.classList.add('soap');
+ v.hyg=clamp(v.hyg+.9);sfx.pop();faceOn($('#pet svg'),a,v);
+ if(Math.random()<.3)renderStats();
+ if(a.id==='cerdo'&&!pigNote){pigNote=true;say('<b>¿Sabías que…?</b> Los cerdos se revuelcan en el barro porque casi no sudan: así se refrescan y se protegen del sol.')}
+}
+function shower(){
+ const a=cur(),v=cs();if(v.asleep)return asleepMsg(a);ac();sfx.water();
+ const s=$('#scene').getBoundingClientRect(),r=$('#pet').getBoundingClientRect();
+ for(let i=0;i<34;i++){const d=fxAt('drop',r.left+Math.random()*r.width,s.top);d.style.animationDelay=Math.random()*.6+'s';setTimeout(()=>d.remove(),1600)}
+ const had=document.querySelectorAll('#fx .soap').length;
+ setTimeout(()=>document.querySelectorAll('#fx .soap').forEach(b=>b.remove()),700);
+ v.hyg=clamp(v.hyg+(had?8:4));addXP(1);
+ if(v.hyg>=95){v.fun=clamp(v.fun+4);hearts(2);say(`¡${g(a,'Limpio','Limpia')} y reluciente!`)}
+ renderStats();renderTabs();updateFace();save();
+}
+function lamp(){
+ const a=cur(),v=cs();v.asleep=!v.asleep;sfx.click();
+ if(!v.asleep){addXP(2);say(v.energy<40?'¡Uaaah! Todavía tengo sueño…':'¡Buenos días! Ya tengo energía.')}
+ renderTray();updateFace();renderTabs();save();
+}
+function tickle(){
+ const a=cur(),v=cs();ac();
+ if(v.asleep)return say('Zzz… zzz…');
+ const now=Date.now();anim('jump');sfx[a.id]();
+ if(now-tickleAt>1200){v.fun=clamp(v.fun+2);tickleAt=now}
+ const i=factIdx[a.id]=((factIdx[a.id]??-1)+1)%a.facts.length;
+ say(`<b>${a.sound}</b> ¿Sabías que…? ${a.facts[i]}`);renderStats();
+}
+function collect(){
+ const a=cur(),v=cs();if(!prodReady(a,v))return;ac();
+ v.prodAt=Date.now()+a.prod.every*1000;
+ if(a.prod.abono){state.pantry.abono=(state.pantry.abono||0)+1;sfx.pop();say(`<b>+1 ${a.prod.e} ${a.prod.name}.</b> ${a.prod.info}`)}
+ else{state.coins+=a.prod.coins;sfx.coin();say(`<b>${a.prod.e} ${a.prod.name}: +${a.prod.coins} monedas.</b> ${a.prod.info}`)}
+ hearts(2,a.prod.e);addXP(3);renderProd();renderStats();save();
+}
+function plotTap(i){
+ const p=state.plots[i];ac();
+ if(!p.c){const c=CR[state.tool];if(!c)return say('Elige una semilla abajo para plantar.');
+  if(state.coins<c.cost)return say('No tienes monedas para esa semilla.');
+  state.coins-=c.cost;Object.assign(p,{c:c.id,prog:0,w:false});sfx.click();addXP(1);
+  say(`Has plantado <b>${c.name}</b>. Tócala para regarla y crecerá el doble de rápido.`);
+ }else if(p.prog>=1){const c=CR[p.c];state.pantry[c.id]=(state.pantry[c.id]||0)+c.y;p.c=null;sfx.coin();addXP(3);hearts(2,c.e);
+  say(`<b>¡Cosecha! +${c.y} ${c.name}</b> en la despensa. En el Comedero sale gratis.`);
+ }else if(state.tool==='abono'){if(!(state.pantry.abono>0))return say('No tienes abono. El caballo y el conejo te lo dan cuando están contentos.');
+  state.pantry.abono--;p.prog=1;sfx.pop();say('¡El abono alimenta la tierra! La planta ha crecido de golpe.');renderTray();
+ }else if(!p.w){p.w=true;sfx.water();say('¡Regada! Las plantas necesitan agua y sol para crecer.')}
+ else say(`${CR[p.c].name} está creciendo: ${Math.round(p.prog*100)} %. ${CR[p.c].real}`);
+ renderGarden();renderStats();save();
+}
+function wear(id){
+ const a=cur(),v=cs(),x=ACC[id];ac();
+ if(!state.owned.includes(id)){if(state.coins<x.p)return say(`Te faltan monedas para ${x.name.toLowerCase()}.`);
+  state.coins-=x.p;state.owned.push(id);sfx.coin();v.outfit[x.slot]=id;v.fun=clamp(v.fun+6);hearts(2);say(`¡Comprado! ${x.e} ${x.name} para ${a.name}. Tócalo otra vez para quitárselo.`)}
+ else{v.outfit[x.slot]=v.outfit[x.slot]===id?null:id;sfx.click()}
+ renderPet();renderTray();renderTabs();renderStats();save();
+}
+
+/* ---------- ventanas ---------- */
+function openModal(html){$('#card').innerHTML=`<button class="close" id="mclose" aria-label="Cerrar">✕</button>`+html;$('#modal').hidden=false;$('#mclose').onclick=closeModal}
+function closeModal(){$('#modal').hidden=true;if(game){cancelAnimationFrame(game.raf);game=null}renderAll();save()}
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+function canPlay(){const a=cur(),v=cs();if(v.asleep){asleepMsg(a);return false}if(v.sick){sickMsg(a);return false}return true}
+
+function openFicha(){
+ const a=cur();const no=FOODS.filter(f=>!a.eats.includes(f.id));
+ openModal(`<div class="ficha-head">${petSVG(a,'f',cs().outfit)}<div><h2>${a.name}</h2><p class="sub" style="margin:0">${g(a,'El','La')} ${a.species} · dice <b>${a.sound}</b></p></div></div>
+ <dl><dt>Dieta</dt><dd>${a.diet}</dd><dt>Su cría</dt><dd>${a.cria}</dd><dt>El macho</dt><dd>${a.macho}</dd><dt>Nos da</dt><dd>${a.da}</dd>
+ <dt>Come</dt><dd class="emo">${a.eats.map(id=>F[id].e).join(' ')}</dd><dt>Favorita</dt><dd>${F[a.fav].e} ${F[a.fav].name}</dd><dt>No le des</dt><dd class="emo">${no.map(f=>f.e).join(' ')}</dd></dl>
+ <ul class="facts">${a.facts.map(t=>`<li>${t}</li>`).join('')}</ul>`);
+ faceOn($('#card svg'),a,{...cs(),asleep:false,sick:false});
+}
+function openVet(){
+ const a=cur(),v=cs();
+ if(!v.sick){openModal(`<h2>Veterinario</h2><p class="sub">${a.name} está ${g(a,'sano','sana')}. ¡Buen trabajo!</p><div class="explain">El veterinario o la veterinaria revisa a los animales, les pone vacunas y los cura. Para que no enfermen: comida adecuada, agua limpia, higiene y descanso.</div>`);return}
+ openModal(`<h2>Veterinario</h2><p class="sub">${a.name} está ${g(a,'malito','malita')}: ha pasado demasiado tiempo sin comer o sucio.</p><div class="explain">Le daremos una medicina. Después mantenlo limpio y bien alimentado para que no vuelva a enfermar.</div><div class="row"><span class="progress">Cuesta 10 monedas</span><button class="big" id="cure"><span class="e">💊</span>Dar medicina</button></div>`);
+ $('#cure').onclick=()=>{if(state.coins<10){$('#cure').outerHTML='<span class="progress">Gana monedas con el Quiz del Prado.</span>';return}
+  state.coins-=10;v.sick=false;v.hyg=Math.max(v.hyg,40);v.hunger=Math.max(v.hunger,40);addXP(2);sfx.coin();closeModal();hearts(3);say(`¡${a.name} ya está ${g(a,'curado','curada')}! Gracias.`)};
+}
+function openQuiz(){
+ const qs=shuffle(QUIZ.slice()).slice(0,5);let i=0,ok=0;
+ const step=()=>{
+  if(i>=qs.length){const prize=ok*5;state.coins+=prize;const v=cs();v.fun=clamp(v.fun+ok*4);addXP(ok*4);if(prize)sfx.coin();
+   openModal(`<h2>${ok===5?'¡Perfecto!':ok>=3?'¡Muy bien!':'¡Buen intento!'}</h2><p class="sub">Has acertado ${ok} de 5 preguntas.</p><div class="explain">Ganas <b>${prize}</b> monedas y ${cur().name} se divierte contigo.</div><div class="row"><span></span><button class="big" id="again"><span class="e">🔁</span>Otra ronda</button></div>`);
+   $('#again').onclick=openQuiz;renderStats();save();return}
+  const q=qs[i];const opts=shuffle(q.o.map((t,k)=>({t,ok:k===0})));
+  openModal(`<h2>Quiz de la granja</h2><div class="progress">Pregunta ${i+1} de 5 · aciertos ${ok}</div><div class="qtext">${q.q}</div><div class="opts">${opts.map((o,k)=>`<button class="opt" data-k="${k}">${o.t}</button>`).join('')}</div><div id="qx"></div>`);
+  document.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+   const o=opts[b.dataset.k];document.querySelectorAll('.opt').forEach((x,k)=>{x.disabled=true;if(opts[k].ok)x.classList.add('ok')});
+   if(o.ok){ok++;sfx.coin()}else{b.classList.add('no');sfx.no()}
+   $('#qx').innerHTML=`<div class="explain">${o.ok?'¡Correcto! ':'¡Casi! '}${q.x}</div><div class="row"><span></span><button class="big" id="next"><span class="e">➡️</span>${i<4?'Siguiente':'Ver resultado'}</button></div>`;
+   $('#next').onclick=()=>{i++;step()};$('#next').focus();
+  });
+ };
+ step();
+}
+function openSounds(){
+ const rounds=shuffle(ANIMALS.slice()).slice(0,5);let i=0,ok=0;
+ const step=()=>{
+  if(i>=rounds.length){const prize=ok*3;state.coins+=prize;cs().fun=clamp(cs().fun+ok*3);addXP(ok*2);if(prize)sfx.coin();
+   openModal(`<h2>¿Quién soy?</h2><p class="sub">Has acertado ${ok} de 5.</p><div class="explain">Ganas <b>${prize}</b> monedas.</div><div class="row"><span></span><button class="big" id="again"><span class="e">🔁</span>Otra vez</button></div>`);$('#again').onclick=openSounds;renderStats();save();return}
+  const ans=rounds[i];const opts=shuffle([ans,...shuffle(ANIMALS.filter(x=>x.id!==ans.id)).slice(0,2)]);
+  openModal(`<h2>¿Quién soy?</h2><div class="progress">${i+1} de 5 · aciertos ${ok}</div><div class="qtext">¿Qué animal dice «${ans.sound.replace(/[¡!]/g,'')}»?</div><div class="row" style="margin:0 0 10px"><button class="big" id="play"><span class="e">🔊</span>Escuchar</button></div><div class="opts">${opts.map((o,k)=>`<button class="opt" data-k="${k}"><span class="e">${EMOJI[o.id]}</span>${o.species[0].toUpperCase()+o.species.slice(1)}</button>`).join('')}</div><div id="qx"></div>`);
+  $('#play').onclick=()=>sfx[ans.id]();sfx[ans.id]();
+  document.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+   const o=opts[b.dataset.k];document.querySelectorAll('.opt').forEach((x,k)=>{x.disabled=true;if(opts[k]===ans)x.classList.add('ok')});
+   if(o===ans){ok++;sfx.coin()}else{b.classList.add('no');sfx.no()}
+   $('#qx').innerHTML=`<div class="explain">${o===ans?'¡Correcto!':'¡Casi!'} ${g(ans,'El','La')} ${ans.species} dice ${ans.sound}</div><div class="row"><span></span><button class="big" id="next"><span class="e">➡️</span>${i<4?'Siguiente':'Ver resultado'}</button></div>`;
+   $('#next').onclick=()=>{i++;step()};$('#next').focus();
+  });
+ };
+ step();
+}
+function openMemo(){
+ if(!canPlay())return;
+ const cards=shuffle(MEMO.flatMap((p,k)=>[{k,e:p[0],t:p[1]},{k,e:p[2],t:p[3]}]));let open=[],done=0,moves=0,lock=false;
+ openModal(`<h2>Parejas de la granja</h2><p class="sub">Une cada animal con lo que nos da.</p><div class="progress" id="mm">Intentos 0</div><div class="mem" style="margin-top:8px">${cards.map((c,i)=>`<button class="mc" data-i="${i}" aria-label="Carta"></button>`).join('')}</div><div id="mx"></div>`);
+ document.querySelectorAll('.mc').forEach(b=>b.onclick=()=>{
+  const c=cards[b.dataset.i];if(lock||b.classList.contains('up'))return;
+  b.classList.add('up');b.innerHTML=`<span class="e">${c.e}</span><small>${c.t}</small>`;b.setAttribute('aria-label',c.t);sfx.click();open.push(b);
+  if(open.length<2)return;moves++;$('#mm').textContent='Intentos '+moves;
+  const[x,y]=open;open=[];
+  if(cards[x.dataset.i].k===cards[y.dataset.i].k){x.classList.add('done');y.classList.add('done');done++;sfx.pop();const p=MEMO[c.k];
+   $('#mx').innerHTML=`<div class="explain">${p[0]} ${p[1]} → ${p[2]} ${p[3]}</div>`;
+   if(done===MEMO.length){const prize=Math.max(5,24-(moves-6)*2);state.coins+=prize;cs().fun=clamp(cs().fun+20);cs().energy=clamp(cs().energy-5);addXP(8);sfx.coin();
+    $('#mx').innerHTML=`<div class="explain"><b>¡Todas!</b> En ${moves} intentos. Ganas ${prize} monedas.</div><div class="row"><span></span><button class="big" id="again"><span class="e">🔁</span>Otra vez</button></div>`;$('#again').onclick=openMemo;renderStats();save()}
+  }else{lock=true;setTimeout(()=>{[x,y].forEach(b=>{b.classList.remove('up');b.innerHTML='';b.setAttribute('aria-label','Carta')});lock=false},800)}
+ });
+}
+function openCatch(){
+ const a=cur(),v=cs();
+ if(!canPlay())return;
+ if(v.energy<15)return say(`Estoy ${g(a,'cansado','cansada')} para jugar. Déjame dormir un poco en el Establo.`);
+ openModal(`<h2>Cesta de comida</h2><p class="sub">Atrapa solo lo que ${a.name} puede comer. Si atrapas algo que no debe comer, pierdes una vida.</p><div class="gamebar"><span id="gS">Puntos 0</span><span id="gL">♥♥♥</span><span id="gT">30 s</span></div><canvas id="gc" width="360" height="420"></canvas><div id="gEnd"></div>`);
+ const cv=$('#gc'),ctx=cv.getContext('2d'),W=360,H=420;
+ const good=a.eats.map(id=>F[id]),bad=FOODS.filter(f=>!a.eats.includes(f.id));
+ game={x:W/2,items:[],score:0,lives:3,t0:performance.now(),last:0,spawn:0,lesson:null,raf:0,keys:{}};
+ const G=game;
+ const setX=e=>{const r=cv.getBoundingClientRect();G.x=Math.max(30,Math.min(W-30,(e.clientX-r.left)/r.width*W))};
+ cv.addEventListener('pointermove',setX);cv.addEventListener('pointerdown',setX);
+ const kd=e=>{G.keys[e.key]=e.type==='keydown'};window.addEventListener('keydown',kd);window.addEventListener('keyup',kd);
+ const stop=()=>{window.removeEventListener('keydown',kd);window.removeEventListener('keyup',kd)};
+ const frame=now=>{
+  if(game!==G)return stop();
+  const dt=Math.min(.05,(now-(G.last||now))/1000);G.last=now;const el=(now-G.t0)/1000,left=Math.max(0,30-el);
+  if(G.keys.ArrowLeft)G.x=Math.max(30,G.x-320*dt);if(G.keys.ArrowRight)G.x=Math.min(W-30,G.x+320*dt);
+  G.spawn-=dt;if(G.spawn<=0){G.spawn=Math.max(.38,.8-el*.012);const isG=Math.random()<.6;const pool=isG?good:bad;G.items.push({x:24+Math.random()*(W-48),y:-20,v:110+el*5+Math.random()*50,f:pool[Math.floor(Math.random()*pool.length)],good:isG})}
+  ctx.clearRect(0,0,W,H);ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='34px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
+  G.items=G.items.filter(it=>{it.y+=it.v*dt;
+   if(it.y>H-58&&it.y<H-20&&Math.abs(it.x-G.x)<42){if(it.good){G.score++;sfx.pop()}else{G.lives--;G.lesson=it.f;sfx.no()}return false}
+   if(it.y>H+20)return false;ctx.fillText(it.f.e,it.x,it.y);return true});
+  ctx.font='52px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';ctx.fillText('🧺',G.x,H-36);
+  $('#gS').textContent='Puntos '+G.score;$('#gL').textContent='♥'.repeat(Math.max(0,G.lives))+'♡'.repeat(3-Math.max(0,G.lives));$('#gT').textContent=Math.ceil(left)+' s';
+  if(left<=0||G.lives<=0){
+   const prize=G.score*2;state.coins+=prize;v.fun=clamp(v.fun+Math.min(40,G.score*3));v.energy=clamp(v.energy-10);addXP(Math.min(15,G.score));if(prize)sfx.coin();
+   const f=G.lesson;
+   $('#gEnd').innerHTML=`<div class="explain"><b>${G.score} puntos</b> · ganas ${prize} monedas.${f?`<br>Recuerda: ${a.name} no debe comer ${f.name.toLowerCase()} ${f.e}. ${whyNot(a,f)}`:''}</div><div class="row"><span></span><button class="big" id="gAgain"><span class="e">🔁</span>Otra vez</button></div>`;
+   $('#gAgain').onclick=openCatch;renderStats();save();game=null;stop();return}
+  G.raf=requestAnimationFrame(frame);
+ };
+ G.raf=requestAnimationFrame(frame);
+}
+
+/* ---------- arranque ---------- */
+function start(data){
+ state=migrate((data&&data.animals)?data:(load()||fresh()));
+ const away=Math.min((Date.now()-(state.last||Date.now()))/1000,6*3600);
+ if(away>5){decay(away,.3);for(const id in state.animals){const v=state.animals[id];['hunger','hyg','energy','fun'].forEach(k=>v[k]=Math.max(v[k],12))}}
+ $('#mute').textContent=state.muted?'🔇':'🔊';
+ renderAll();
+ say(`¡Hola! Soy <b>${cur().name}</b>. Dame de comer arrastrando la comida hasta mí. Sube de nivel para adoptar más animales.`);
+
+ $('#tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(!b)return;const a=ANIMALS.find(x=>x.id===b.dataset.id);ac();
+  if(!unlocked(a)){sfx.no();return say(`Llega al <b>nivel ${a.lvl}</b> para adoptar a un animal nuevo. Gana experiencia cuidando, jugando y cultivando.`)}
+  state.current=a.id;sfx.click();renderAll();sfx[a.id]();
+  const v=cs();const low=STATS.filter(s=>v[s.k]<25);
+  if(v.sick)sickMsg(a);else say(v.asleep?`Zzz… ${a.name} está ${g(a,'dormido','dormida')}.`:low.length?low[0].low.replace('sucio',g(a,'sucio','sucia')):`<b>${a.sound}</b> ¡Hola, soy ${a.name}!`)});
+ $('#rooms').addEventListener('click',e=>{const b=e.target.closest('.room');if(!b)return;state.room=b.dataset.room;ac();sfx.click();renderScene();save()});
+ $('#garden').addEventListener('click',e=>{const b=e.target.closest('.plot');if(b)plotTap(+b.dataset.i)});
+ $('#pet').addEventListener('click',tickle);
+ $('#prod').addEventListener('click',collect);
+ $('#mute').onclick=()=>{state.muted=!state.muted;$('#mute').textContent=state.muted?'🔇':'🔊';save()};
+ $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()});
+ window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#modal').hidden)closeModal()});
+ window.addEventListener('pointermove',e=>{const svg=$('#pet svg');if(!svg||$('#pet').hidden)return;const r=svg.getBoundingClientRect();
+  const dx=Math.max(-1,Math.min(1,(e.clientX-r.left-r.width/2)/r.width)),dy=Math.max(-1,Math.min(1,(e.clientY-r.top-r.height/2)/r.height));
+  svg.querySelectorAll('.pupil').forEach(p=>p.setAttribute('transform',`translate(${(dx*5).toFixed(1)} ${(dy*5).toFixed(1)})`))});
+ (function blink(){setTimeout(()=>{const s=$('#pet svg');if(s&&!cs().asleep){s.classList.add('blink');setTimeout(()=>s.classList.remove('blink'),140)}blink()},2500+Math.random()*3000)})();
+ let n=0;
+ setInterval(()=>{decay(1,1);n++;
+  for(const a of ANIMALS){if(!unlocked(a))continue;const v=state.animals[a.id];
+   if(!v.sick&&!v.asleep&&(v.hyg<12||v.hunger<8)&&Math.random()<.01){v.sick=true;renderTabs();if(a.id===state.current){renderPet();sickMsg(a)}}}
+  if(!eating)updateFace();renderStats();if(state.room==='huerto')renderGarden();
+  if(n%5===0){renderTabs();save()}
+  const v=cs(),a=cur();
+  if($('#modal').hidden&&!v.asleep&&!v.sick&&$('#bubble').hidden&&Date.now()-complainAt>25000){const low=STATS.filter(s=>v[s.k]<30).sort((x,y)=>v[x.k]-v[y.k]);
+   if(low.length){complainAt=Date.now();say(low[0].low.replace('sucio',g(a,'sucio','sucia')),true);sfx[a.id]()}}
+ },1000);
+ window.claude?.hot?.snapshot?.(()=>state);
+}
+window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
+</script>
+
+</body>
+</html>
